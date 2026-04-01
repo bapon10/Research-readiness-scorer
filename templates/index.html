@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Research Readiness Scorer</title>
+</head>
+<body>
+    <h2>Enter GitHub Repo URL</h2>
+
+    <input type="text" id="repo" size="60" placeholder="https://github.com/...">
+    <button onclick="analyze()">Analyze</button>
+
+    <h3>Result:</h3>
+    <pre id="output"></pre>
+
+    <script>
+        async function analyze() {
+            const repo = document.getElementById("repo").value;
+
+            const response = await fetch("/analyze", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({repo})
+            });
+
+            const data = await response.json();
+
+            document.getElementById("output").innerText =
+                JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>

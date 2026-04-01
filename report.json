@@ -1,0 +1,35 @@
+{
+    "score": 100,
+    "checks": {
+        "readme": {
+            "score": 1,
+            "status": "good",
+            "details": "README with usage info"
+        },
+        "license": {
+            "score": 1,
+            "status": "present",
+            "details": "License found"
+        },
+        "tests": {
+            "score": 1,
+            "status": "present",
+            "details": "Test files found"
+        },
+        "ci": {
+            "score": 1,
+            "status": "present",
+            "details": "CI found"
+        },
+        "version": {
+            "score": 1,
+            "status": "present",
+            "details": "Git tags found"
+        },
+        "citation": {
+            "score": 1,
+            "status": "present",
+            "details": "Citation file found"
+        }
+    }
+}
