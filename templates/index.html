@@ -4,29 +4,51 @@
     <title>Research Readiness Scorer</title>
 </head>
 <body>
-    <h2>Enter GitHub Repo URL</h2>
 
-    <input type="text" id="repo" size="60" placeholder="https://github.com/...">
-    <button onclick="analyze()">Analyze</button>
+<h2>Enter GitHub Repo URL</h2>
 
-    <h3>Result:</h3>
-    <pre id="output"></pre>
+<input type="text" id="repo" size="60" placeholder="Enter GitHub repo URL">
 
-    <script>
-        async function analyze() {
-            const repo = document.getElementById("repo").value;
+<button onclick="analyze()">Analyze</button>
 
-            const response = await fetch("/analyze", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({repo})
-            });
+<h3>Output:</h3>
+<pre id="output">Waiting...</pre>
 
-            const data = await response.json();
+<script>
+async function analyze() {
+    try {
+        const repo = document.getElementById("repo").value;
 
-            document.getElementById("output").innerText =
-                JSON.stringify(data, null, 2);
-        }
-    </script>
+        console.log("Sending request for:", repo);
+
+        const response = await fetch("/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ repo: repo })
+        });
+
+        const data = await response.json();
+
+        console.log("Response:", data);
+
+        document.getElementById("output").innerText =
+            "Score: " + data.score + "\n\n" +
+            "README: " + data.results.readme.status + "\n" +
+            "License: " + data.results.license.status + "\n" +
+            "Tests: " + data.results.tests.status + "\n" +
+            "CI: " + data.results.ci.status + "\n" +
+            "Version: " + data.results.version.status + "\n" +
+            "Citation: " + data.results.citation.status;
+
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("output").innerText =
+            "Error occurred. Check console.";
+    }
+}
+</script>
+
 </body>
 </html>

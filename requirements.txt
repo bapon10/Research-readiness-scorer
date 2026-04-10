@@ -1,0 +1,4 @@
+flask
+gunicorn
+gitpython
+jinja2
