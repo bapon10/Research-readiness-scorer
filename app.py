@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, render_template
 import os
-
 from utils.repo_loader import load_repo
 from checks.readme_check import check_readme
 from checks.license_check import check_license
@@ -22,17 +21,15 @@ def compute_score(results):
     """
     total = 0
     for key, value in results.items():
-        # Normalize score (it's already 0-100)
         normalized_score = value["score"] / 100.0
         weighted_score = normalized_score * WEIGHTS.get(key, 0)
         total += weighted_score
-    
     return round(total, 2)
 
 
 @app.route("/")
 def home():
-    return "Research Readiness Scorer API Running"
+    return render_template("index.html")
 
 
 @app.route("/ui")
@@ -43,33 +40,32 @@ def ui():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.json
+    if not data or not data.get("repo"):
+        return jsonify({"error": "Missing 'repo' field in request body"}), 400
+
     repo_input = data.get("repo")
 
     try:
         repo_path = load_repo(repo_input)
-
         results = {
-            "readme": check_readme(repo_path),
-            "license": check_license(repo_path),
-            "tests": check_tests(repo_path),
-            "ci": check_ci(repo_path),
-            "version": check_version(repo_path),
-            "citation": check_citation(repo_path),
+            "readme":          check_readme(repo_path),
+            "license":         check_license(repo_path),
+            "tests":           check_tests(repo_path),
+            "ci":              check_ci(repo_path),
+            "version":         check_version(repo_path),
+            "citation":        check_citation(repo_path),
             "reproducibility": check_reproducibility(repo_path),
-            "maintainability": check_maintainability(repo_path)
+            "maintainability": check_maintainability(repo_path),
         }
-
         score = compute_score(results)
-
         return jsonify({
-            "score": score,
+            "score":        score,
             "total_weight": sum(WEIGHTS.values()),
-            "results": results
+            "results":      results,
         })
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)

@@ -1,54 +1,921 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Research Readiness Scorer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Research Readiness Scorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c10;
+      --surface: #111318;
+      --surface2: #181c24;
+      --border: #1f2533;
+      --border-bright: #2e3a50;
+      --text: #c8d6e8;
+      --text-muted: #5a6a80;
+      --text-dim: #3a4a60;
+      --accent: #00e5ff;
+      --accent-dim: rgba(0, 229, 255, 0.08);
+      --accent-glow: rgba(0, 229, 255, 0.25);
+      --green: #00ff88;
+      --yellow: #ffd84d;
+      --red: #ff4d6d;
+      --orange: #ff8c42;
+      --score-gradient: linear-gradient(90deg, #ff4d6d, #ff8c42, #ffd84d, #00e5ff, #00ff88);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid Background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 48px 40px 36px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo-block .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-block .eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .logo-block h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .logo-block h1 span { color: var(--accent); }
+
+    .header-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+      line-height: 1.8;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(0,255,136,0); }
+    }
+
+    /* ── Main Layout ── */
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 40px 80px;
+    }
+
+    /* ── Input Section ── */
+    .input-section {
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .repo-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .repo-input-wrap::before {
+      content: '$ repo →';
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--text-dim);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #repoInput {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px 16px 90px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #repoInput::placeholder { color: var(--text-dim); }
+    #repoInput:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow), inset 0 0 20px rgba(0,229,255,0.03);
+    }
+
+    #analyzeBtn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 0 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    #analyzeBtn:hover {
+      background: #33edff;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+    #analyzeBtn:active { transform: scale(0.97); }
+    #analyzeBtn:disabled {
+      background: var(--border-bright);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-text { transition: opacity 0.2s; }
+
+    /* ── Loading ── */
+    #loadingBar {
+      display: none;
+      margin-top: 20px;
+    }
+    .loading-track {
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .loading-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .loading-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spinner {
+      width: 10px; height: 10px;
+      border: 1px solid var(--text-dim);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ── */
+    #errorBox {
+      display: none;
+      background: rgba(255,77,109,0.07);
+      border: 1px solid rgba(255,77,109,0.3);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #ff4d6d;
+    }
+    #errorBox::before { content: '✕  '; }
+
+    /* ── Results ── */
+    #results {
+      display: none;
+      animation: fadeUp 0.5s ease forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Score Hero ── */
+    .score-hero {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 32px;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 36px 40px;
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .score-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--score-gradient);
+    }
+
+    .score-ring-wrap {
+      position: relative;
+      width: 120px; height: 120px;
+      flex-shrink: 0;
+    }
+    .score-ring-svg {
+      width: 120px; height: 120px;
+      transform: rotate(-90deg);
+    }
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+    .ring-fg {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 326;
+      stroke-dashoffset: 326;
+      transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  stroke 0.5s ease;
+    }
+    .score-ring-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+    .score-unit { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+    .score-info h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .score-repo-name {
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 16px;
+      word-break: break-all;
+    }
+    .score-grade-bar {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .grade-segment {
+      height: 6px;
+      border-radius: 3px;
+      flex: 1;
+      background: var(--border);
+      transition: background 0.5s ease;
+    }
+    .grade-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      padding: 0 2px;
+    }
+    .verdict-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      margin-top: 14px;
+    }
+
+    /* ── Checks Grid ── */
+    .checks-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .checks-header h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .total-weight {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .checks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .check-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .check-card::after {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+      transition: background 0.3s;
+    }
+    .check-card:hover {
+      border-color: var(--border-bright);
+      background: var(--surface2);
+      transform: translateY(-1px);
+    }
+    .check-card.expanded {
+      border-color: var(--border-bright);
+      background: var(--surface2);
+    }
+
+    .check-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .check-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      text-transform: capitalize;
+    }
+    .check-icon {
+      font-size: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .check-bar-wrap { margin-bottom: 12px; }
+    .check-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .check-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .check-bar-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .check-score-val { font-weight: 600; }
+
+    .check-details {
+      display: none;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+    .check-card.expanded .check-details { display: block; }
+
+    .detail-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .detail-item .di-icon { flex-shrink: 0; color: var(--text-dim); }
+    .detail-item.pass .di-icon { color: var(--green); }
+    .detail-item.fail .di-icon { color: var(--red); }
+    .detail-item.warn .di-icon { color: var(--yellow); }
+
+    /* ── Raw JSON ── */
+    .raw-section {
+      margin-top: 16px;
+    }
+    .raw-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 8px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .raw-toggle:hover { border-color: var(--border-bright); color: var(--text); }
+    .raw-toggle-arrow { transition: transform 0.25s; display: inline-block; }
+    .raw-toggle.open .raw-toggle-arrow { transform: rotate(90deg); }
+
+    #rawJson {
+      display: none;
+      margin-top: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      overflow-x: auto;
+      line-height: 1.7;
+      white-space: pre;
+    }
+    #rawJson.visible { display: block; animation: fadeUp 0.3s ease; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    @media (max-width: 640px) {
+      header, main, footer { padding-left: 20px; padding-right: 20px; }
+      .score-hero { grid-template-columns: 1fr; text-align: center; }
+      .score-ring-wrap { margin: 0 auto; }
+      .score-grade-bar, .grade-labels { max-width: 320px; margin: 0 auto; }
+      .verdict-badge { display: block; text-align: center; }
+      .input-row { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
 
-<h2>Enter GitHub Repo URL</h2>
+<header>
+  <div class="logo-block">
+    <div class="eyebrow">Open Source Analysis</div>
+    <h1>Research<span>Ready</span></h1>
+  </div>
+  <div class="header-meta">
+    <span class="status-dot"></span>API Online<br>
+    v1.0.0 · Flask + Python
+  </div>
+</header>
 
-<input type="text" id="repo" size="60" placeholder="Enter GitHub repo URL">
+<main>
 
-<button onclick="analyze()">Analyze</button>
+  <!-- Input -->
+  <div class="input-section">
+    <div class="section-label">// Repository Target</div>
+    <div class="input-row">
+      <div class="repo-input-wrap">
+        <input
+          type="text"
+          id="repoInput"
+          placeholder="https://github.com/user/repo  or  /local/path/to/repo"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button id="analyzeBtn" onclick="runAnalysis()">
+        <span class="btn-text">ANALYZE</span>
+      </button>
+    </div>
 
-<h3>Output:</h3>
-<pre id="output">Waiting...</pre>
+    <div id="loadingBar">
+      <div class="loading-track">
+        <div class="loading-fill" id="loadingFill"></div>
+      </div>
+      <div class="loading-label">
+        <div class="spinner"></div>
+        <span id="loadingMsg">Cloning repository…</span>
+      </div>
+    </div>
+
+    <div id="errorBox"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- Score Hero -->
+    <div class="score-hero" id="scoreHero">
+      <div class="score-ring-wrap">
+        <svg class="score-ring-svg" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="score-ring-label">
+          <span class="score-num" id="scoreNum">0</span>
+          <span class="score-unit">/ 100</span>
+        </div>
+      </div>
+      <div class="score-info">
+        <h2>Readiness Report</h2>
+        <div class="score-repo-name" id="scoreRepo">—</div>
+        <div class="score-grade-bar" id="gradeBar"></div>
+        <div class="grade-labels">
+          <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+        </div>
+        <span class="verdict-badge" id="verdictBadge"></span>
+      </div>
+    </div>
+
+    <!-- Checks Grid -->
+    <div class="checks-header">
+      <h3>// Check Breakdown</h3>
+      <div class="total-weight" id="totalWeightLabel"></div>
+    </div>
+
+    <div class="checks-grid" id="checksGrid"></div>
+
+    <!-- Raw JSON -->
+    <div class="raw-section">
+      <button class="raw-toggle" id="rawToggle" onclick="toggleRaw()">
+        <span class="raw-toggle-arrow">▶</span> Raw JSON Response
+      </button>
+      <pre id="rawJson"></pre>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <span>Research Readiness Scorer</span>
+  <span id="analysisTime"></span>
+</footer>
 
 <script>
-async function analyze() {
-    try {
-        const repo = document.getElementById("repo").value;
+  const CHECK_META = {
+    readme:          { icon: '📄', label: 'README',          desc: 'Documentation quality and completeness' },
+    license:         { icon: '⚖️',  label: 'License',         desc: 'License file presence and validity' },
+    tests:           { icon: '🧪', label: 'Tests',            desc: 'Test coverage and structure' },
+    ci:              { icon: '⚙️',  label: 'CI / CD',         desc: 'Continuous integration configuration' },
+    version:         { icon: '🏷️', label: 'Versioning',       desc: 'Semantic versioning and changelogs' },
+    citation:        { icon: '📚', label: 'Citation',         desc: 'CITATION.cff or BibTeX references' },
+    reproducibility: { icon: '🔁', label: 'Reproducibility',  desc: 'Lockfiles, Docker, environment specs' },
+    maintainability: { icon: '🛠️', label: 'Maintainability',  desc: 'Code quality, linting, structure' },
+  };
 
-        console.log("Sending request for:", repo);
+  let loadingInterval = null;
 
-        const response = await fetch("/analyze", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ repo: repo })
-        });
+  function scoreColor(s) {
+    if (s >= 80) return 'var(--green)';
+    if (s >= 60) return 'var(--accent)';
+    if (s >= 40) return 'var(--yellow)';
+    return 'var(--red)';
+  }
 
-        const data = await response.json();
+  function verdict(s) {
+    if (s >= 85) return { label: 'PUBLICATION READY', bg: 'rgba(0,255,136,0.1)', color: 'var(--green)', border: 'rgba(0,255,136,0.3)' };
+    if (s >= 70) return { label: 'RESEARCH GRADE',    bg: 'rgba(0,229,255,0.1)', color: 'var(--accent)', border: 'rgba(0,229,255,0.3)' };
+    if (s >= 50) return { label: 'NEEDS IMPROVEMENT', bg: 'rgba(255,216,77,0.1)', color: 'var(--yellow)', border: 'rgba(255,216,77,0.3)' };
+    return          { label: 'NOT READY',            bg: 'rgba(255,77,109,0.1)', color: 'var(--red)',    border: 'rgba(255,77,109,0.3)' };
+  }
 
-        console.log("Response:", data);
-
-        document.getElementById("output").innerText =
-            "Score: " + data.score + "\n\n" +
-            "README: " + data.results.readme.status + "\n" +
-            "License: " + data.results.license.status + "\n" +
-            "Tests: " + data.results.tests.status + "\n" +
-            "CI: " + data.results.ci.status + "\n" +
-            "Version: " + data.results.version.status + "\n" +
-            "Citation: " + data.results.citation.status;
-
-    } catch (error) {
-        console.error("Error:", error);
-        document.getElementById("output").innerText =
-            "Error occurred. Check console.";
+  function animateNumber(el, target, duration=1000) {
+    const start = performance.now();
+    const from = parseFloat(el.textContent) || 0;
+    function step(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(from + (target - from) * ease);
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = target;
     }
-}
-</script>
+    requestAnimationFrame(step);
+  }
 
+  function fakeLoadingProgress() {
+    let pct = 0;
+    const fill = document.getElementById('loadingFill');
+    const msg  = document.getElementById('loadingMsg');
+    const msgs = [
+      'Cloning repository…',
+      'Running README check…',
+      'Checking license…',
+      'Scanning tests…',
+      'Inspecting CI config…',
+      'Verifying versioning…',
+      'Looking for citations…',
+      'Checking reproducibility…',
+      'Measuring maintainability…',
+      'Computing final score…',
+    ];
+    let msgIdx = 0;
+    loadingInterval = setInterval(() => {
+      const step = Math.random() * 8 + 4;
+      pct = Math.min(pct + step, 90);
+      fill.style.width = pct + '%';
+      if (msgIdx < msgs.length - 1 && pct > (msgIdx + 1) * 9) {
+        msgIdx++;
+        msg.textContent = msgs[msgIdx];
+      }
+    }, 400);
+  }
+
+  function stopLoading(success) {
+    clearInterval(loadingInterval);
+    const fill = document.getElementById('loadingFill');
+    fill.style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('loadingBar').style.display = 'none';
+      fill.style.width = '0%';
+    }, 400);
+  }
+
+  function renderResults(data, repoInput, elapsed) {
+    const { score, results, total_weight } = data;
+
+    // Score Ring
+    const circumference = 326;
+    const offset = circumference - (score / 100) * circumference;
+    const ring = document.getElementById('ringFg');
+    ring.style.stroke = scoreColor(score);
+    setTimeout(() => { ring.style.strokeDashoffset = offset; }, 80);
+
+    // Animated number
+    animateNumber(document.getElementById('scoreNum'), Math.round(score));
+
+    // Repo label
+    document.getElementById('scoreRepo').textContent = repoInput;
+
+    // Grade bar (10 segments)
+    const gradeBar = document.getElementById('gradeBar');
+    gradeBar.innerHTML = '';
+    for (let i = 0; i < 10; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'grade-segment';
+      const threshold = (i + 1) * 10;
+      if (score >= threshold) {
+        setTimeout(() => { seg.style.background = scoreColor(score); }, i * 60);
+      }
+      gradeBar.appendChild(seg);
+    }
+
+    // Verdict
+    const v = verdict(score);
+    const badge = document.getElementById('verdictBadge');
+    badge.textContent = v.label;
+    badge.style.background = v.bg;
+    badge.style.color = v.color;
+    badge.style.border = `1px solid ${v.border}`;
+
+    // Weight label
+    document.getElementById('totalWeightLabel').textContent =
+      `Total weight: ${total_weight ?? 100}`;
+
+    // Checks Grid
+    const grid = document.getElementById('checksGrid');
+    grid.innerHTML = '';
+    let cardIdx = 0;
+    for (const [key, val] of Object.entries(results)) {
+      const meta = CHECK_META[key] || { icon: '🔍', label: key, desc: '' };
+      const s    = val.score ?? 0;
+      const col  = scoreColor(s);
+
+      const card = document.createElement('div');
+      card.className = 'check-card';
+      card.style.animationDelay = cardIdx * 60 + 'ms';
+      card.style.setProperty('--card-color', col);
+
+      // Left border color
+      card.style.setProperty('--after-bg', col);
+
+      // Details section
+      let detailsHtml = '';
+      if (val.details && typeof val.details === 'object') {
+        for (const [dk, dv] of Object.entries(val.details)) {
+          const cls  = dv === true ? 'pass' : dv === false ? 'fail' : 'warn';
+          const icon = dv === true ? '✓' : dv === false ? '✗' : '~';
+          detailsHtml += `
+            <div class="detail-item ${cls}">
+              <span class="di-icon">${icon}</span>
+              <span>${dk.replace(/_/g, ' ')}: <strong>${typeof dv === 'boolean' ? (dv ? 'yes' : 'no') : dv}</strong></span>
+            </div>`;
+        }
+      } else if (val.message) {
+        detailsHtml = `<div class="detail-item"><span class="di-icon">ℹ</span><span>${val.message}</span></div>`;
+      }
+      if (!detailsHtml) {
+        detailsHtml = `<div class="detail-item"><span class="di-icon">ℹ</span><span>No detail data returned.</span></div>`;
+      }
+
+      card.innerHTML = `
+        <div class="check-top">
+          <div>
+            <div class="check-title">${meta.label}</div>
+          </div>
+          <div class="check-icon">${meta.icon}</div>
+        </div>
+        <div class="check-bar-wrap">
+          <div class="check-bar-track">
+            <div class="check-bar-fill" style="background:${col}" data-target="${s}"></div>
+          </div>
+          <div class="check-bar-meta">
+            <span style="color:var(--text-dim)">${meta.desc}</span>
+            <span class="check-score-val" style="color:${col}">${s}/100</span>
+          </div>
+        </div>
+        <div class="check-details">${detailsHtml}</div>
+      `;
+
+      card.style.cssText += `--after-bg: ${col};`;
+      card.querySelector('.check-card')?.style;
+
+      card.addEventListener('click', () => {
+        card.classList.toggle('expanded');
+      });
+
+      grid.appendChild(card);
+
+      // Animate bar after insertion
+      setTimeout(() => {
+        const fill = card.querySelector('.check-bar-fill');
+        if (fill) fill.style.width = s + '%';
+      }, 100 + cardIdx * 60);
+
+      // Apply left border via pseudo via inline trick
+      const style = document.createElement('style');
+      style.textContent = `.check-card:nth-child(${cardIdx+1})::after { background: ${col}; }`;
+      document.head.appendChild(style);
+
+      cardIdx++;
+    }
+
+    // Raw JSON
+    document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
+
+    // Elapsed time
+    if (elapsed != null) {
+      document.getElementById('analysisTime').textContent = `Analysis completed in ${elapsed}ms`;
+    }
+
+    // Show results
+    document.getElementById('results').style.display = 'block';
+  }
+
+  async function runAnalysis() {
+    const input = document.getElementById('repoInput').value.trim();
+    if (!input) {
+      shakeInput();
+      return;
+    }
+
+    const btn = document.getElementById('analyzeBtn');
+    const errBox = document.getElementById('errorBox');
+    const resultsEl = document.getElementById('results');
+
+    // Reset
+    errBox.style.display = 'none';
+    resultsEl.style.display = 'none';
+    btn.disabled = true;
+    btn.querySelector('.btn-text').textContent = 'RUNNING…';
+
+    // Loading
+    document.getElementById('loadingBar').style.display = 'block';
+    fakeLoadingProgress();
+
+    const t0 = Date.now();
+    try {
+      const resp = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: input }),
+      });
+      const data = await resp.json();
+      const elapsed = Date.now() - t0;
+
+      stopLoading(resp.ok);
+
+      if (!resp.ok || data.error) {
+        throw new Error(data.error || `HTTP ${resp.status}`);
+      }
+
+      renderResults(data, input, elapsed);
+
+    } catch (err) {
+      stopLoading(false);
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.querySelector('.btn-text').textContent = 'ANALYZE';
+    }
+  }
+
+  function shakeInput() {
+    const el = document.getElementById('repoInput');
+    el.style.animation = 'none';
+    el.style.borderColor = 'var(--red)';
+    el.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.2)';
+    setTimeout(() => {
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+    }, 1200);
+  }
+
+  function toggleRaw() {
+    const pre  = document.getElementById('rawJson');
+    const btn  = document.getElementById('rawToggle');
+    const open = pre.classList.toggle('visible');
+    btn.classList.toggle('open', open);
+  }
+
+  // Allow Enter key
+  document.getElementById('repoInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') runAnalysis();
+  });
+</script>
 </body>
 </html>
